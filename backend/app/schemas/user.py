@@ -1,18 +1,27 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
+from enum import Enum
+
+class AccountType(str, Enum):
+    SHIPPER = "shipper"
+    CARRIER = "carrier"
 
 # Shared properties
 class UserBase(BaseModel):
     email: Optional[EmailStr] = None
+    name: Optional[str] = None
     username: Optional[str] = None
+    account_type: Optional[AccountType] = None
     is_active: Optional[bool] = True
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
+    name: str
     username: str
     password: str
+    account_type: AccountType
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):

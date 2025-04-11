@@ -20,7 +20,8 @@ def signup(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Create new user.
+    Create new user with name, email, username, password and account_type.
+    Account type can be either "shipper" or "carrier".
     """
     # Check if user with same email exists
     user = user_service.get_by_email(db, email=user_in.email)

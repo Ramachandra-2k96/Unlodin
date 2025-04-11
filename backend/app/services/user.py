@@ -16,8 +16,10 @@ def get_by_username(db: Session, username: str) -> Optional[User]:
 
 def create(db: Session, user_in: UserCreate) -> User:
     user = User(
+        name=user_in.name,
         email=user_in.email,
         username=user_in.username,
+        account_type=user_in.account_type.value,
         hashed_password=get_password_hash(user_in.password),
         is_active=True,
     )
@@ -31,6 +33,10 @@ def update(db: Session, db_obj: User, obj_in: UserUpdate) -> User:
     if "password" in update_data and update_data["password"]:
         update_data["hashed_password"] = get_password_hash(update_data["password"])
         del update_data["password"]
+    
+    if "account_type" in update_data and update_data["account_type"]:
+        update_data["account_type"] = update_data["account_type"].value
+    
     for field, value in update_data.items():
         setattr(db_obj, field, value)
     db.add(db_obj)

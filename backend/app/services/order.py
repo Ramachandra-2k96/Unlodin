@@ -6,12 +6,16 @@ import uuid
 
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
-from app.schemas.order import OrderCreate, OrderUpdate, OrderStatusUpdate, OrderFilter
+from app.schemas.order import OrderCreate, OrderUpdate, OrderStatusUpdate, OrderFilter, CarrierAssignment
 from app.schemas.pagination import PaginatedResult
 
 def generate_order_number() -> str:
     """Generate a unique order number."""
     return f"ORD-{uuid.uuid4().hex[:8].upper()}"
+
+def generate_tracking_number() -> str:
+    """Generate a unique tracking number."""
+    return f"TRK-{uuid.uuid4().hex[:10].upper()}"
 
 def get_by_id(db: Session, order_id: int) -> Optional[Order]:
     return db.query(Order).filter(Order.id == order_id).first()
@@ -19,21 +23,29 @@ def get_by_id(db: Session, order_id: int) -> Optional[Order]:
 def get_by_order_number(db: Session, order_number: str) -> Optional[Order]:
     return db.query(Order).filter(Order.order_number == order_number).first()
 
+def get_by_tracking_number(db: Session, tracking_number: str) -> Optional[Order]:
+    return db.query(Order).filter(Order.tracking_number == tracking_number).first()
+
 def get_items(db: Session, order_id: int) -> List[OrderItem]:
     return db.query(OrderItem).filter(OrderItem.order_id == order_id).all()
 
 def get_multi(
     db: Session, 
-    user_id: Optional[int] = None,
+    shipper_id: Optional[int] = None,
+    carrier_id: Optional[int] = None,
     filter_params: Optional[OrderFilter] = None,
     skip: int = 0, 
     limit: int = 100
 ) -> PaginatedResult[Order]:
     query = db.query(Order)
     
-    # Apply user_id filter if provided
-    if user_id is not None:
-        query = query.filter(Order.user_id == user_id)
+    # Apply shipper_id filter if provided
+    if shipper_id is not None:
+        query = query.filter(Order.shipper_id == shipper_id)
+    
+    # Apply carrier_id filter if provided
+    if carrier_id is not None:
+        query = query.filter(Order.carrier_id == carrier_id)
     
     # Apply additional filters if provided
     if filter_params:
@@ -45,6 +57,8 @@ def get_multi(
             query = query.filter(Order.created_at >= filter_params.date_from)
         if filter_params.date_to:
             query = query.filter(Order.created_at <= filter_params.date_to)
+        if filter_params.is_assigned is not None:
+            query = query.filter(Order.is_assigned == filter_params.is_assigned)
     
     # Get total count before applying pagination
     total = query.count()
@@ -63,16 +77,42 @@ def get_multi(
         page_size=page_size
     )
 
-def create(db: Session, obj_in: OrderCreate, user_id: int) -> Order:
+def get_available_orders(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100
+) -> PaginatedResult[Order]:
+    """Get orders that are not assigned to a carrier."""
+    query = db.query(Order).filter(Order.is_assigned == False)
+    
+    # Get total count before applying pagination
+    total = query.count()
+    
+    # Apply ordering and pagination
+    items = query.order_by(desc(Order.created_at)).offset(skip).limit(limit).all()
+    
+    # Calculate page information
+    page_size = limit
+    page = (skip // page_size) + 1 if page_size > 0 else 1
+    
+    return PaginatedResult.create(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
+
+def create(db: Session, obj_in: OrderCreate, shipper_id: int) -> Order:
     """Create a new order with items."""
     order_data = obj_in.model_dump(exclude={"items"})
     
     # Create order
     db_obj = Order(
         **order_data,
-        user_id=user_id,
+        shipper_id=shipper_id,
         order_number=generate_order_number(),
-        status=OrderStatus.PENDING
+        status=OrderStatus.PENDING,
+        is_assigned=False
     )
     db.add(db_obj)
     db.flush()  # Flush to get the order ID without committing
@@ -104,7 +144,25 @@ def update(db: Session, db_obj: Order, obj_in: OrderUpdate) -> Order:
 
 def update_status(db: Session, db_obj: Order, status_update: OrderStatusUpdate) -> Order:
     """Update order status."""
+    old_status = db_obj.status
     db_obj.status = status_update.status
+    
+    # Generate tracking number when order is accepted by carrier
+    if old_status == OrderStatus.PENDING and status_update.status == OrderStatus.ACCEPTED:
+        db_obj.tracking_number = generate_tracking_number()
+    
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+def assign_carrier(db: Session, db_obj: Order, carrier_assignment: CarrierAssignment) -> Order:
+    """Assign a carrier to an order."""
+    db_obj.carrier_id = carrier_assignment.carrier_id
+    db_obj.is_assigned = True
+    db_obj.status = OrderStatus.ACCEPTED
+    db_obj.tracking_number = generate_tracking_number()
+    
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
