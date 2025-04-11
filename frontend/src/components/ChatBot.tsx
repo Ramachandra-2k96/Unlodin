@@ -100,7 +100,7 @@ const ChatBot: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-white font-medium text-sm">Unlodin Assistant</h3>
+                  <h3 className="text-white font-medium text-pretty">Unlod<span className='text-yellow-400'>in</span> Assistant</h3>
                   <div className="flex items-center text-xs text-green-400">
                     <span className="w-2 h-2 bg-green-400 rounded-full inline-block mr-1"></span>
                     <span>Online</span>

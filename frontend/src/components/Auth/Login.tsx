@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Mail, Lock, Eye, EyeOff, ArrowRight, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Truck, Mail, Lock, Eye, EyeOff, ArrowRight, Home, AlertCircle } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Login: React.FC = () => {
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', { email, password });
+    setError('');
+    setIsSubmitting(true);
+    
+    try {
+      await login(email, password);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Redirect if already authenticated
+  if (isAuthenticated && !isLoading) {
+    return <Navigate to="/orders" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center relative overflow-hidden py-8">
@@ -61,9 +78,16 @@ const Login: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 shadow-xl"
         >
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-200">{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">Email or Username</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-slate-500" />
@@ -71,13 +95,13 @@ const Login: React.FC = () => {
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="text"
                   autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-lg bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
-                  placeholder="you@example.com"
+                  placeholder="Email or username"
                 />
               </div>
             </div>
@@ -133,12 +157,25 @@ const Login: React.FC = () => {
             <div>
               <motion.button
                 type="submit"
+                disabled={isSubmitting}
                 whileHover={{ y: -3, boxShadow: "0 10px 25px -5px rgba(234, 179, 8, 0.4)" }}
                 whileTap={{ y: 0 }}
-                className="w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-slate-900 bg-gradient-to-r from-yellow-500 to-yellow-400 font-medium hover:from-yellow-400 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
+                className={`w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-slate-900 bg-gradient-to-r from-yellow-500 to-yellow-400 font-medium hover:from-yellow-400 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                <span>Sign in</span>
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  <>
+                    <span>Sign in</span>
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </motion.button>
             </div>
           </form>

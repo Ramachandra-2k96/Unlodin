@@ -62,6 +62,19 @@ class OrderUpdate(OrderBase):
 # Properties to receive via API for status update
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+    
+    @validator('status', pre=True)
+    def validate_status(cls, v):
+        """Ensure the status is a valid uppercase enum value"""
+        if isinstance(v, str):
+            # Convert string to uppercase
+            v = v.upper()
+            # Check if it's a valid enum value
+            try:
+                return OrderStatus(v)
+            except ValueError:
+                raise ValueError(f"Invalid status value: {v}. Valid values are: {[s.value for s in OrderStatus]}")
+        return v
 
 # Properties to receive via API for carrier assignment
 class CarrierAssignment(BaseModel):

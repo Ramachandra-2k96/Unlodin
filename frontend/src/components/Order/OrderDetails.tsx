@@ -6,39 +6,47 @@ import { OrderType } from './types';
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'bg-green-100 text-green-800 border-green-200';
-      case 'In Transit': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Processing': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_transit': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'accepted': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'picked_up': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Get user-friendly status label
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'Pending';
+      case 'accepted': return 'Accepted';
+      case 'picked_up': return 'Picked Up';
+      case 'in_transit': return 'In Transit';
+      case 'delivered': return 'Delivered';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
     }
   };
 
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(status)}`}>
-      {status}
+      {getStatusLabel(status)}
     </span>
   );
 };
 
 interface OrderDetailsProps {
   order: OrderType;
-  onBack: () => void;
-  onUpdateStatus: () => void;
+  onStatusUpdate: () => void;
 }
 
-const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onBack, onUpdateStatus }) => {
+const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onStatusUpdate }) => {
   return (
     <div className="text-slate-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-6 border-b border-slate-700">
         <div className="flex items-start sm:items-center gap-4 mb-4 sm:mb-0">
-          <button 
-            onClick={onBack}
-            className="text-slate-400 hover:text-white p-2 -ml-2 hover:bg-slate-800 rounded-full transition-colors"
-          >
-            <ChevronLeft size={20} />
-          </button>
           <div>
             <h2 className="text-xl font-bold text-white">
               {order.id}
@@ -53,7 +61,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onBack, onUpdateStat
         </div>
         
         <button
-          onClick={onUpdateStatus}
+          onClick={onStatusUpdate}
           className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition-colors"
         >
           <Edit size={16} />

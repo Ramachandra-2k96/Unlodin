@@ -5,12 +5,21 @@ import enum
 from app.core.database import Base
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"  # Carrier has accepted the delivery
-    PICKED_UP = "picked_up"  # Carrier has picked up the shipment
-    IN_TRANSIT = "in_transit"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
+    """Order status enum"""
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"  # Carrier has accepted the delivery
+    PICKED_UP = "PICKED_UP"  # Carrier has picked up the shipment
+    IN_TRANSIT = "IN_TRANSIT"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
+    
+    def __str__(self):
+        """Return the value of the enum as a string"""
+        return self.value
+    
+    def __repr__(self):
+        """Return the value of the enum as a string"""
+        return self.value
 
 class Order(Base):
     __tablename__ = "orders"
@@ -43,7 +52,9 @@ class Order(Base):
     
     # Tracking and status
     tracking_number = Column(String, unique=True, index=True, nullable=True)
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+    # Define enum with name=True to ensure case sensitivity
+    status = Column(Enum(OrderStatus, name='orderstatus', create_constraint=True, validate_strings=True), 
+                   default=OrderStatus.PENDING, nullable=False)
     notes = Column(String, nullable=True)
     
     # Payment information

@@ -2,6 +2,9 @@ from typing import Any, Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+from sqlalchemy.sql.expression import literal
+from sqlalchemy import update
 
 from app.core.auth import get_current_active_user
 from app.core.database import get_db
@@ -44,7 +47,7 @@ def create_order(
     # Get order items
     order.items = order_service.get_items(db, order.id)
     
-    return order
+    return Order.model_validate(order)
 
 @router.get("/my-shipments", response_model=PaginatedResult[Order])
 def list_shipper_orders(
@@ -89,6 +92,9 @@ def list_shipper_orders(
     for order in orders_page.items:
         order.items = order_service.get_items(db, order.id)
     
+    # Convert SQLAlchemy models to Pydantic models
+    orders_page.items = [Order.model_validate(order) for order in orders_page.items]
+    
     return orders_page
 
 # CARRIER ENDPOINTS
@@ -123,6 +129,9 @@ def list_available_orders(
     # Load order items for each order
     for order in orders_page.items:
         order.items = order_service.get_items(db, order.id)
+    
+    # Convert SQLAlchemy models to Pydantic models
+    orders_page.items = [Order.model_validate(order) for order in orders_page.items]
     
     return orders_page
 
@@ -166,6 +175,9 @@ def list_carrier_orders(
     for order in orders_page.items:
         order.items = order_service.get_items(db, order.id)
     
+    # Convert SQLAlchemy models to Pydantic models
+    orders_page.items = [Order.model_validate(order) for order in orders_page.items]
+    
     return orders_page
 
 @router.post("/{order_id}/accept", response_model=Order)
@@ -199,14 +211,22 @@ def accept_order(
             detail="This order is already assigned to a carrier"
         )
     
-    # Assign the order to the current carrier
-    carrier_assignment = CarrierAssignment(carrier_id=current_user.id)
-    order = order_service.assign_carrier(db=db, db_obj=order, carrier_assignment=carrier_assignment)
-    
-    # Get order items
-    order.items = order_service.get_items(db, order.id)
-    
-    return order
+    try:
+        # Update the order using the carrier assignment service function
+        carrier_assignment = CarrierAssignment(carrier_id=current_user.id)
+        order = order_service.assign_carrier(db=db, db_obj=order, carrier_assignment=carrier_assignment)
+        
+        # Get order items
+        order.items = order_service.get_items(db, order.id)
+        
+        return Order.model_validate(order)
+    except Exception as e:
+        db.rollback()
+        print(f"Error accepting order: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to accept order: {str(e)}"
+        )
 
 # SHARED ENDPOINTS
 
@@ -251,7 +271,7 @@ def get_order(
     # Get order items
     order.items = order_service.get_items(db, order.id)
     
-    return order
+    return Order.model_validate(order)
 
 @router.get("/track/{tracking_number}", response_model=Order)
 def track_order(
@@ -289,7 +309,7 @@ def track_order(
     # Get order items
     order.items = order_service.get_items(db, order.id)
     
-    return order
+    return Order.model_validate(order)
 
 @router.patch("/{order_id}/status", response_model=Order)
 def update_order_status(
@@ -301,6 +321,10 @@ def update_order_status(
     """
     Update order status (Shipper can cancel, Carrier can update delivery status).
     """
+    print(f"Received status update request for order {order_id}")
+    print(f"Status update data: {status_update}")
+    print(f"Status value: {status_update.status}, Type: {type(status_update.status)}")
+    
     order = order_service.get_by_id(db=db, order_id=order_id)
     
     if not order:
@@ -370,4 +394,4 @@ def update_order_status(
     # Get order items
     order.items = order_service.get_items(db, order.id)
     
-    return order 
+    return Order.model_validate(order) 

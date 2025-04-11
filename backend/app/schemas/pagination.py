@@ -15,7 +15,7 @@ class PaginatedResult(BaseModel, Generic[T]):
     
     @classmethod
     def create(cls, items: List[T], total: int, page: int, page_size: int):
-        pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+        pages = max(1, (total + page_size - 1) // page_size if page_size > 0 else 0)
         return cls(
             items=items,
             total=total,

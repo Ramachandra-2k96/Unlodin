@@ -150,16 +150,6 @@ const Navbar: React.FC = () => {
                     </motion.button>
                   ))}
                   
-                  <Link to="/orders">
-                    <motion.button
-                      className="nav-item px-3 py-2 capitalize text-sm font-medium text-gray-300 hover:text-yellow-300 transition-all duration-300"
-                      whileHover={{ y: -2 }}
-                      whileTap={{ y: 0 }}
-                    >
-                      <span className="relative">orders</span>
-                    </motion.button>
-                  </Link>
-                  
                   <div className="flex items-center space-x-3">
                     <Link to="/login">
                       <motion.button 
@@ -251,17 +241,6 @@ const Navbar: React.FC = () => {
                   {item}
                 </motion.button>
               ))}
-              <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)}>
-                <motion.div 
-                  className="block w-full text-left px-6 py-4 text-lg text-slate-300 hover:bg-slate-700/30 flex items-center space-x-2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: 0.3 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <span>orders</span>
-                </motion.div>
-              </Link>
               <Link to="/login">
                 <motion.div 
                   className="block w-full text-left px-6 py-4 text-lg text-slate-300 hover:bg-slate-700/30 flex items-center space-x-2"

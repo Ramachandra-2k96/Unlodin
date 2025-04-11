@@ -4,15 +4,27 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Cookie
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
 
-from app.core.auth import authenticate_user
+from app.core.auth import authenticate_user, get_current_active_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token
 from app.services import user as user_service
 from app.schemas.user import User, UserCreate, Token
+from app.models.user import User as UserModel
 
 router = APIRouter()
+
+@router.options("/signup")
+def signup_options():
+    """
+    Handle preflight request for signup.
+    """
+    return JSONResponse(
+        content={"message": "Preflight request successful"},
+        status_code=200,
+    )
 
 @router.post("/signup", response_model=User, status_code=status.HTTP_201_CREATED)
 def signup(
@@ -41,7 +53,7 @@ def signup(
     
     # Create new user
     user = user_service.create(db, user_in)
-    return user
+    return User.model_validate(user)
 
 @router.post("/login", response_model=Token)
 def login(
@@ -100,4 +112,13 @@ def logout(
         secure=True
     )
     
-    return {"message": "Successfully logged out"} 
+    return {"message": "Successfully logged out"}
+
+@router.get("/me", response_model=User)
+def get_current_user(
+    current_user: UserModel = Depends(get_current_active_user)
+) -> Any:
+    """
+    Get current user information.
+    """
+    return User.model_validate(current_user) 

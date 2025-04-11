@@ -1,4 +1,4 @@
-export type OrderStatus = 'In Transit' | 'Delivered' | 'Processing' | 'Cancelled';
+export type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
 
 export type OrderItem = {
   name: string;
@@ -13,7 +13,7 @@ export type Customer = {
 };
 
 export type OrderType = {
-  id: string;
+  id: number;
   status: OrderStatus;
   origin: string;
   destination: string;

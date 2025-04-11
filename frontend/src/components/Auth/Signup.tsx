@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Truck, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle, Home, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Signup: React.FC = () => {
+  const { signup } = useAuth();
+  const navigate = useNavigate();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userType, setUserType] = useState<'shipper' | 'carrier'>('shipper');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -20,10 +27,45 @@ const Signup: React.FC = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log('Signup attempt:', { name, email, password, userType });
+    setError('');
+    
+    // Validate form
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Call the signup API
+      await signup({
+        name,
+        email,
+        username,
+        password,
+        account_type: userType
+      });
+      
+      // Redirect to login page after successful signup
+      navigate('/login', { 
+        state: { 
+          successMessage: 'Account created successfully! Please log in.' 
+        } 
+      });
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err.response?.data?.detail || 'Failed to create account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -69,6 +111,13 @@ const Signup: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 shadow-xl"
         >
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-200">{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
@@ -86,6 +135,26 @@ const Signup: React.FC = () => {
                   onChange={(e) => setName(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-lg bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                   placeholder="John Doe"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-700 rounded-lg bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                  placeholder="johndoe123"
                 />
               </div>
             </div>
@@ -203,39 +272,28 @@ const Signup: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  required
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-yellow-500 focus:ring-yellow-500"
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="text-slate-300">
-                  I agree to the{' '}
-                  <a href="#" className="text-yellow-500 hover:text-yellow-400">
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-yellow-500 hover:text-yellow-400">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-            </div>
-            
             <div>
               <motion.button
                 type="submit"
+                disabled={isSubmitting}
                 whileHover={{ y: -3, boxShadow: "0 10px 25px -5px rgba(234, 179, 8, 0.4)" }}
                 whileTap={{ y: 0 }}
-                className="w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-slate-900 bg-gradient-to-r from-yellow-500 to-yellow-400 font-medium hover:from-yellow-400 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
+                className={`w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-slate-900 bg-gradient-to-r from-yellow-500 to-yellow-400 font-medium hover:from-yellow-400 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                <span>Create Account</span>
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </span>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </motion.button>
             </div>
           </form>

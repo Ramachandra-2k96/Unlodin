@@ -6,17 +6,32 @@ import { OrderType } from './types';
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'bg-green-100 text-green-800 border-green-200';
-      case 'In Transit': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Processing': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_transit': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'accepted': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'picked_up': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Get user-friendly status label
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'Pending';
+      case 'accepted': return 'Accepted';
+      case 'picked_up': return 'Picked Up';
+      case 'in_transit': return 'In Transit';
+      case 'delivered': return 'Delivered';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
     }
   };
 
   return (
     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(status)}`}>
-      {status}
+      {getStatusLabel(status)}
     </span>
   );
 };
@@ -61,7 +76,7 @@ const OrderCard: React.FC<{ order: OrderType; onClick: () => void }> = ({ order,
     <div className="mt-3 pt-3 border-t border-slate-700">
       <div className="flex items-center gap-1.5 text-sm">
         <span className="text-slate-400">Customer:</span>
-        <span className="font-medium text-slate-200">{order.customer.name}</span>
+        <span className="font-medium text-slate-200">{order.customer?.name || 'N/A'}</span>
       </div>
     </div>
   </div>
@@ -69,10 +84,10 @@ const OrderCard: React.FC<{ order: OrderType; onClick: () => void }> = ({ order,
 
 interface OrdersListProps {
   orders: OrderType[];
-  onSelectOrder: (order: OrderType) => void;
+  onOrderSelect: (order: OrderType) => void;
 }
 
-const OrdersList: React.FC<OrdersListProps> = ({ orders, onSelectOrder }) => {
+const OrdersList: React.FC<OrdersListProps> = ({ orders, onOrderSelect }) => {
   return (
     <div>
       {/* Results count */}
@@ -101,14 +116,14 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onSelectOrder }) => {
               <tr 
                 key={order.id} 
                 className="hover:bg-slate-800 transition-colors cursor-pointer"
-                onClick={() => onSelectOrder(order)}
+                onClick={() => onOrderSelect(order)}
               >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-500">{order.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.date}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <StatusBadge status={order.status} />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.customer.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.customer?.name || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.origin}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.destination}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{order.weight} kg</td>
@@ -124,7 +139,7 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onSelectOrder }) => {
           <OrderCard 
             key={order.id} 
             order={order} 
-            onClick={() => onSelectOrder(order)} 
+            onClick={() => onOrderSelect(order)} 
           />
         ))}
       </div>

@@ -104,14 +104,14 @@ def get_available_orders(
 
 def create(db: Session, obj_in: OrderCreate, shipper_id: int) -> Order:
     """Create a new order with items."""
-    order_data = obj_in.model_dump(exclude={"items"})
+    order_data = obj_in.model_dump(exclude={"items", "status"})
     
     # Create order
     db_obj = Order(
         **order_data,
         shipper_id=shipper_id,
         order_number=generate_order_number(),
-        status=OrderStatus.PENDING,
+        status=OrderStatus.PENDING,  # Use the enum directly
         is_assigned=False
     )
     db.add(db_obj)
@@ -145,7 +145,7 @@ def update(db: Session, db_obj: Order, obj_in: OrderUpdate) -> Order:
 def update_status(db: Session, db_obj: Order, status_update: OrderStatusUpdate) -> Order:
     """Update order status."""
     old_status = db_obj.status
-    db_obj.status = status_update.status
+    db_obj.status = status_update.status  # Use the enum directly
     
     # Generate tracking number when order is accepted by carrier
     if old_status == OrderStatus.PENDING and status_update.status == OrderStatus.ACCEPTED:
@@ -160,7 +160,7 @@ def assign_carrier(db: Session, db_obj: Order, carrier_assignment: CarrierAssign
     """Assign a carrier to an order."""
     db_obj.carrier_id = carrier_assignment.carrier_id
     db_obj.is_assigned = True
-    db_obj.status = OrderStatus.ACCEPTED
+    db_obj.status = OrderStatus.ACCEPTED  # Use the enum directly, now with uppercase values
     db_obj.tracking_number = generate_tracking_number()
     
     db.add(db_obj)
