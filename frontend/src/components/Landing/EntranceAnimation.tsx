@@ -68,7 +68,7 @@ const EntranceAnimation: React.FC = () => {
             <Truck className="w-16 h-16 text-yellow-400" />
           </div>
         </div>
-        <div className="entrance-text ml-4 flex items-center text-3xl font-bold">
+        <div className="entrance-text ml-4 flex items-center text-7xl font-bold">
           <span className="text-white opacity-0">UNLOD</span>
           <span className="text-yellow-400 opacity-0">IN</span>
         </div>
