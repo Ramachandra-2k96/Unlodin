@@ -1,4 +1,4 @@
-export type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
+export type OrderStatus = 'pending' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
 
 export type OrderItem = {
   name: string;
@@ -24,4 +24,11 @@ export type OrderType = {
   customer: Customer;
   trackingNumber: string;
   estimatedDelivery: string;
+  // Additional properties for timeline
+  created_at?: string;
+  accepted_at?: string;
+  pickup_date?: string;
+  transit_date?: string;
+  delivery_date?: string;
+  updated_at?: string;
 }; 

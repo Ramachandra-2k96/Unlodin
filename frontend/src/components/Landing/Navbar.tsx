@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Truck, LogIn, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -9,6 +9,8 @@ const Navbar: React.FC = () => {
   const [activeSection, setActiveSection] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -28,18 +30,21 @@ const Navbar: React.FC = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
       
-      // Determine active section for nav highlighting
-      const sections = ['hero', 'features', 'about', 'contact'];
-      const currentPos = window.scrollY + 150;
-      
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element) {
-          const offset = element.offsetTop;
-          
-          if (currentPos >= offset && currentPos < offset + element.offsetHeight) {
-            setActiveSection(section);
-            break;
+      // Only update active section if we're on the home page
+      if (location.pathname === '/') {
+        // Determine active section for nav highlighting
+        const sections = ['hero', 'features', 'about', 'contact'];
+        const currentPos = window.scrollY + 150;
+        
+        for (const section of sections) {
+          const element = document.getElementById(section);
+          if (element) {
+            const offset = element.offsetTop;
+            
+            if (currentPos >= offset && currentPos < offset + element.offsetHeight) {
+              setActiveSection(section);
+              break;
+            }
           }
         }
       }
@@ -47,24 +52,65 @@ const Navbar: React.FC = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]);
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-      setActiveSection(sectionId);
-    }
+  const scrollToSection = async (sectionId: string) => {
+    // Close mobile menu first
     setIsMobileMenuOpen(false);
     setIsExpanded(false);
+
+    // If not on home page, navigate to home first
+    if (location.pathname !== '/') {
+      await navigate('/');
+      // Wait longer for navigation and component mounting to complete
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const offset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - offset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+          setActiveSection(sectionId);
+        }
+      }, 500);
+    } else {
+      // If already on home page, just scroll
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - offset;
+
+        // Force scroll on mobile devices
+        if (window.innerWidth < 768) {
+          window.scrollTo(0, offsetPosition);
+          setTimeout(() => {
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }, 100);
+        } else {
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+        setActiveSection(sectionId);
+      }
+    }
   };
+
+  // Reset active section when route changes
+  useEffect(() => {
+    if (location.pathname !== '/') {
+      setActiveSection('');
+    }
+  }, [location.pathname]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 py-5">
@@ -227,7 +273,10 @@ const Navbar: React.FC = () => {
               {['features', 'about', 'contact'].map((item, index) => (
                 <motion.button
                   key={item}
-                  onClick={() => scrollToSection(item)}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    scrollToSection(item);
+                  }}
                   className={`block w-full text-left px-6 py-4 capitalize text-lg ${
                     activeSection === item 
                       ? 'text-yellow-400 bg-slate-700/50' 

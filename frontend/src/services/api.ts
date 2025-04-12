@@ -1,6 +1,21 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+// Use window.location to dynamically determine the API base URL
+const getBaseUrl = () => {
+  const apiPath = '/api/v1';
+  
+  // If VITE_API_BASE_URL is available and not empty, use it
+  if (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL !== '/api/v1') {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // In production with Docker, the backend and frontend will be on the same host
+  // But frontend is on port 3000 and backend is on port 8000
+  // So construct the URL dynamically
+  return `${window.location.protocol}//${window.location.hostname}:8000${apiPath}`;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Create axios instance with base configuration
 const api = axios.create({

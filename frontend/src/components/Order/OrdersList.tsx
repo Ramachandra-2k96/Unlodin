@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Truck, Calendar, FileText } from 'lucide-react';
+import { Package, Truck, Calendar, FileText, User, Phone, Barcode } from 'lucide-react';
 import { OrderType } from './types';
 
 // Status badge component
@@ -43,11 +43,17 @@ const OrderCard: React.FC<{ order: OrderType; onClick: () => void }> = ({ order,
     onClick={onClick}
   >
     <div className="flex justify-between items-start mb-3">
-      <h3 className="font-semibold text-lg text-white">{order.id}</h3>
+      <div className="space-y-1">
+        <h3 className="font-semibold text-lg text-white">Order #{order.id}</h3>
+        <div className="flex items-center gap-2 text-sm text-slate-400">
+          <Calendar className="w-4 h-4" />
+          <span>{order.date}</span>
+        </div>
+      </div>
       <StatusBadge status={order.status} />
     </div>
     
-    <div className="grid grid-cols-2 gap-3 text-sm">
+    <div className="grid grid-cols-1 gap-3 text-sm mb-3">
       <div className="flex items-center gap-1.5">
         <Truck className="w-4 h-4 text-yellow-500" />
         <span className="text-slate-400">From:</span>
@@ -61,22 +67,33 @@ const OrderCard: React.FC<{ order: OrderType; onClick: () => void }> = ({ order,
       </div>
       
       <div className="flex items-center gap-1.5">
-        <Calendar className="w-4 h-4 text-yellow-500" />
-        <span className="text-slate-400">Date:</span>
-        <span className="font-medium text-slate-200">{order.date}</span>
-      </div>
-      
-      <div className="flex items-center gap-1.5">
         <FileText className="w-4 h-4 text-yellow-500" />
         <span className="text-slate-400">Weight:</span>
         <span className="font-medium text-slate-200">{order.weight} kg</span>
       </div>
     </div>
     
-    <div className="mt-3 pt-3 border-t border-slate-700">
-      <div className="flex items-center gap-1.5 text-sm">
-        <span className="text-slate-400">Customer:</span>
-        <span className="font-medium text-slate-200">{order.customer?.name || 'N/A'}</span>
+    <div className="pt-3 border-t border-slate-700">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 text-sm">
+          <User className="w-4 h-4 text-yellow-500" />
+          <span className="text-slate-400">Customer:</span>
+          <span className="font-medium text-slate-200">{order.customer?.name || 'N/A'}</span>
+        </div>
+        {order.customer?.phone && (
+          <div className="flex items-center gap-1.5 text-sm">
+            <Phone className="w-4 h-4 text-yellow-500" />
+            <span className="text-slate-400">Phone:</span>
+            <span className="font-medium text-slate-200">{order.customer.phone}</span>
+          </div>
+        )}
+        {order.trackingNumber && (
+          <div className="flex items-center gap-1.5 text-sm">
+            <Barcode className="w-4 h-4 text-yellow-500" />
+            <span className="text-slate-400">Tracking:</span>
+            <span className="font-medium text-slate-200">{order.trackingNumber}</span>
+          </div>
+        )}
       </div>
     </div>
   </div>

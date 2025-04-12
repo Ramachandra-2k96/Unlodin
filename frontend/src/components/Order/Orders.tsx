@@ -72,21 +72,9 @@ const Orders: React.FC = () => {
       
       // Fetch orders based on user role
       if (user?.account_type === 'shipper') {
-        response = await ordersAPI.getShipperOrders(
-          currentPage, 
-          ordersPerPage, 
-          {
-            status: filters.status || undefined,
-          }
-        );
+        response = await ordersAPI.getShipperOrders(currentPage, ordersPerPage);
       } else if (user?.account_type === 'carrier') {
-        response = await ordersAPI.getCarrierOrders(
-          currentPage, 
-          ordersPerPage, 
-          {
-            status: filters.status || undefined,
-          }
-        );
+        response = await ordersAPI.getCarrierOrders(currentPage, ordersPerPage);
       } else {
         // Fallback if user role is unknown
         response = { items: [], total: 0, page: 1, pages: 1 };
@@ -180,23 +168,21 @@ const Orders: React.FC = () => {
     }
   };
   
-  // Initial fetch
+  // Apply filters and search locally
   useEffect(() => {
-    fetchOrders();
-  }, [currentPage, filters, user]);
-  
-  // Fetch available orders when tab changes
-  useEffect(() => {
-    if (activeTab === 'available' && user?.account_type === 'carrier') {
-      fetchAvailableOrders();
+    let filtered = [...orders];
+    
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(order => 
+        order.status.toLowerCase() === filters.status.toLowerCase()
+      );
     }
-  }, [activeTab, availableOrdersPage, user]);
-  
-  // Apply local search
-  useEffect(() => {
+    
+    // Apply search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      const filtered = orders.filter(order => 
+      filtered = filtered.filter(order => 
         order.id.toString().includes(term) ||
         order.origin?.toLowerCase().includes(term) ||
         order.destination?.toLowerCase().includes(term) ||
@@ -204,11 +190,22 @@ const Orders: React.FC = () => {
         order.customer?.name?.toLowerCase().includes(term) ||
         order.trackingNumber?.toLowerCase().includes(term)
       );
-      setFilteredOrders(filtered);
-    } else {
-      setFilteredOrders(orders);
     }
-  }, [orders, searchTerm]);
+    
+    setFilteredOrders(filtered);
+  }, [orders, filters.status, searchTerm]);
+  
+  // Initial fetch
+  useEffect(() => {
+    fetchOrders();
+  }, [currentPage, user]);
+  
+  // Fetch available orders when tab changes
+  useEffect(() => {
+    if (activeTab === 'available' && user?.account_type === 'carrier') {
+      fetchAvailableOrders();
+    }
+  }, [activeTab, availableOrdersPage, user]);
   
   // Change page for my orders
   const paginate = (pageNumber: number) => {
@@ -280,16 +277,24 @@ const Orders: React.FC = () => {
   return (
     <div className="bg-slate-950 min-h-screen flex flex-col">
       {/* Header with user profile */}
-      <header className="bg-slate-900/80 backdrop-blur-sm border-b border-slate-800 py-4 px-6 sticky top-0 z-10">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
+      <header className="bg-slate-900/80 backdrop-blur-sm border-b border-slate-800 py-4 px-4 md:px-6 sticky top-0 z-10">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center w-full md:w-auto justify-between">
             <h1 className="text-xl font-bold text-white">
               <span className="text-white">UNLOD</span><span className="text-yellow-400">IN</span>
             </h1>
+            
+            {user && (
+              <div className="flex md:hidden items-center gap-2 text-slate-300">
+                <User className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm">{user.name}</span>
+                <span className="text-xs px-2 py-0.5 bg-slate-800 rounded-full uppercase">{user.account_type}</span>
+              </div>
+            )}
           </div>
           
           {user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
               <div className="hidden md:flex items-center gap-2 text-slate-300">
                 <User className="w-4 h-4 text-yellow-400" />
                 <span>{user.name}</span>
